@@ -4,6 +4,7 @@ import { Download, Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import SearchBar from "@/components/SearchBar";
 import Modal from "@/components/Modal";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Document {
   id: number;
@@ -27,7 +28,7 @@ export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Document | null>(null);
   const [formName, setFormName] = useState("");
@@ -74,33 +75,21 @@ export default function SearchPage() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">자료 검색 결과</h2>
           <p className="text-muted-foreground text-sm mt-1">
-            총 {filtered.length}개의 자료가 검색되었습니다.
+            총 {filtered.length}개의 자료가 검색되었습니다. 다운로드는 인증 없이 가능합니다.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {isAdmin && (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-all active:scale-[0.97]"
-            >
-              <Plus className="w-4 h-4" /> 등록
-            </button>
-          )}
+        {isAdmin && (
           <button
-            onClick={() => setIsAdmin(!isAdmin)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              isAdmin
-                ? "bg-secondary text-secondary-foreground border-primary/20"
-                : "bg-card text-muted-foreground border-border hover:bg-muted"
-            }`}
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-all active:scale-[0.97]"
           >
-            {isAdmin ? "관리자 모드 종료" : "관리자 인증"}
+            <Plus className="w-4 h-4" /> 등록
           </button>
-        </div>
+        )}
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
+      <div className="hanji-card shadow-card overflow-hidden">
         {/* Desktop table */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">

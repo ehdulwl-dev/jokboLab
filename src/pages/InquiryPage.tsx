@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Lock } from "lucide-react";
+import { Plus, Lock, Info } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/Modal";
 
@@ -14,9 +14,9 @@ interface Inquiry {
 
 const mockInquiries: Inquiry[] = [
   { id: 1, title: "김해김씨 족보 관련 문의", summary: "김해김씨 32세 관련 자료가 있는지 확인 부탁드립니다.", author: "김○○", contact: "010-****-1234", createdAt: "2024-05-10" },
-  { id: 2, title: "자료 다운로드 오류", summary: "전주이씨 족보 PDF 다운로드 시 오류가 발생합니다.", author: "이○○", contact: "010-****-5678", createdAt: "2024-05-08" },
+  { id: 2, title: "인증코드 발급 요청", summary: "허씨 종중 자료 열람을 위한 인증코드 발급을 요청합니다.", author: "허○○", contact: "010-****-5678", createdAt: "2024-05-08" },
   { id: 3, title: "새로운 족보 등록 요청", summary: "밀양박씨 새로운 족보 자료 등록을 요청합니다.", author: "박○○", contact: "010-****-9012", createdAt: "2024-05-05" },
-  { id: 4, title: "회원가입 관련 문의", summary: "회원가입 절차에 대해 문의드립니다.", author: "최○○", contact: "010-****-3456", createdAt: "2024-05-01" },
+  { id: 4, title: "벌초 사진 업로드 문의", summary: "벌초 사진을 업로드하고 싶습니다. 방법을 알려주세요.", author: "최○○", contact: "010-****-3456", createdAt: "2024-05-01" },
 ];
 
 export default function InquiryPage() {
@@ -35,7 +35,7 @@ export default function InquiryPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-12 px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-foreground">문의사항</h2>
           <p className="text-muted-foreground text-sm mt-1">궁금한 점을 자유롭게 문의해 주세요.</p>
@@ -48,8 +48,20 @@ export default function InquiryPage() {
         </button>
       </div>
 
+      {/* Auth code notice */}
+      <div className="flex items-start gap-3 p-4 hanji-card shadow-card mb-8">
+        <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-foreground">인증코드 안내</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            족보사진, 공지사항 열람을 위한 인증코드는 문의를 통해 발급됩니다.
+            문의 등록 시 성씨와 연락처를 남겨주시면 확인 후 인증코드를 안내해 드립니다.
+          </p>
+        </div>
+      </div>
+
       {/* Desktop table */}
-      <div className="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
+      <div className="hanji-card shadow-card overflow-hidden">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -112,7 +124,7 @@ export default function InquiryPage() {
             <textarea
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="문의 내용을 입력하세요"
+              placeholder="문의 내용을 입력하세요 (인증코드 발급 요청 시 성씨를 함께 적어주세요)"
               rows={5}
               className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all resize-none"
             />
@@ -143,6 +155,7 @@ export default function InquiryPage() {
             <Lock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground">
               연락처는 비공개로 처리되며, 관리자만 확인할 수 있습니다.
+              인증코드는 문의 확인 후 별도 안내됩니다.
             </p>
           </div>
           <button
