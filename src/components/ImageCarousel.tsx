@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 import carousel1 from "@/assets/carousel-1.jpg";
 import carousel2 from "@/assets/carousel-2.jpg";
@@ -15,64 +14,67 @@ const slides = [
 ];
 
 export default function ImageCarousel() {
-  const [current, setCurrent] = useState(0);
-  const [direction, setDirection] = useState(1);
+  const [startIndex, setStartIndex] = useState(0);
 
   const next = useCallback(() => {
-    setDirection(1);
-    setCurrent((prev) => (prev + 1) % slides.length);
+    setStartIndex((prev) => (prev + 1) % slides.length);
   }, []);
 
   const prev = useCallback(() => {
-    setDirection(-1);
-    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+    setStartIndex((prev) => (prev - 1 + slides.length) % slides.length);
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(next, 5000);
+    const timer = setInterval(next, 10000);
     return () => clearInterval(timer);
   }, [next]);
 
+  const visibleSlides = [0, 1, 2].map((offset) => slides[(startIndex + offset) % slides.length]);
+
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
-      <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-2xl overflow-hidden shadow-card">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.img
-            key={current}
-            src={slides[current].src}
-            alt={slides[current].alt}
-            custom={direction}
-            initial={{ opacity: 0, x: direction * 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -direction * 60 }}
-            transition={{ duration: 0.35, ease: [0.2, 0, 0, 1] }}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        </AnimatePresence>
+    <div className="relative w-full max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {visibleSlides.map((slide, i) => (
+          <div
+            key={`${startIndex}-${i}`}
+            className="hanji-card shadow-card overflow-hidden group cursor-pointer"
+          >
+            <div className="aspect-[4/3] overflow-hidden">
+              <img
+                src={slide.src}
+                alt={slide.alt}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            </div>
+            <div className="p-3 text-center">
+              <p className="text-sm text-muted-foreground">{slide.alt}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Controls */}
       <button
         onClick={prev}
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm shadow-card flex items-center justify-center hover:bg-card transition-colors"
+        className="absolute -left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-card flex items-center justify-center hover:bg-card transition-colors border border-border"
       >
         <ChevronLeft className="w-5 h-5 text-foreground" />
       </button>
       <button
         onClick={next}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm shadow-card flex items-center justify-center hover:bg-card transition-colors"
+        className="absolute -right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-card flex items-center justify-center hover:bg-card transition-colors border border-border"
       >
         <ChevronRight className="w-5 h-5 text-foreground" />
       </button>
 
       {/* Indicators */}
-      <div className="flex justify-center gap-2 mt-4">
+      <div className="flex justify-center gap-2 mt-5">
         {slides.map((_, i) => (
           <button
             key={i}
-            onClick={() => { setDirection(i > current ? 1 : -1); setCurrent(i); }}
+            onClick={() => setStartIndex(i)}
             className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === current ? "w-8 bg-primary" : "w-1.5 bg-primary/20"
+              i === startIndex ? "w-8 bg-primary" : "w-1.5 bg-primary/20"
             }`}
           />
         ))}
