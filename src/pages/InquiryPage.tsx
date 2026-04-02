@@ -1,36 +1,56 @@
-import { useState } from "react";
-import { Plus, Lock, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Lock, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "@/components/Modal";
-
-interface Inquiry {
-  id: number;
-  title: string;
-  summary: string;
-  author: string;
-  contact: string;
-  createdAt: string;
-}
-
-const mockInquiries: Inquiry[] = [
-  { id: 1, title: "김해김씨 족보 관련 문의", summary: "김해김씨 32세 관련 자료가 있는지 확인 부탁드립니다.", author: "김○○", contact: "010-****-1234", createdAt: "2024-05-10" },
-  { id: 2, title: "인증코드 발급 요청", summary: "허씨 종중 자료 열람을 위한 인증코드 발급을 요청합니다.", author: "허○○", contact: "010-****-5678", createdAt: "2024-05-08" },
-  { id: 3, title: "새로운 족보 등록 요청", summary: "밀양박씨 새로운 족보 자료 등록을 요청합니다.", author: "박○○", contact: "010-****-9012", createdAt: "2024-05-05" },
-  { id: 4, title: "벌초 사진 업로드 문의", summary: "벌초 사진을 업로드하고 싶습니다. 방법을 알려주세요.", author: "최○○", contact: "010-****-3456", createdAt: "2024-05-01" },
-];
+import {
+  fetchInquiries,
+  createInquiry,
+  type Inquiry,
+} from "@/services/inquiryService";
 
 export default function InquiryPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ title: "", content: "", author: "", contact: "" });
 
-  const handleSubmit = () => {
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadInquiries = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchInquiries();
+      setInquiries(data);
+    } catch (err) {
+      console.error("문의 로드 실패:", err);
+      toast.error("문의사항을 불러오는데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInquiries();
+  }, []);
+
+  const handleSubmit = async () => {
     if (!form.title.trim() || !form.content.trim() || !form.author.trim()) {
       toast.error("필수 항목을 모두 입력해주세요.");
       return;
     }
-    toast.success("문의가 등록되었습니다.");
-    setModalOpen(false);
-    setForm({ title: "", content: "", author: "", contact: "" });
+    try {
+      await createInquiry({
+        title: form.title,
+        content: form.content,
+        author: form.author,
+        contact: form.contact || undefined,
+      });
+      toast.success("문의가 등록되었습니다.");
+      setModalOpen(false);
+      setForm({ title: "", content: "", author: "", contact: "" });
+      loadInquiries();
+    } catch {
+      toast.error("문의 등록에 실패했습니다.");
+    }
   };
 
   return (
@@ -60,51 +80,63 @@ export default function InquiryPage() {
         </div>
       </div>
 
-      {/* Desktop table */}
-      <div className="hanji-card shadow-card overflow-hidden">
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                {["제목", "내용", "작성자", "연락처", "작성일"].map((h) => (
-                  <th key={h} className="px-6 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="text-sm">
-              {mockInquiries.map((item) => (
-                <tr key={item.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                  <td className="px-6 py-4 font-medium text-foreground whitespace-nowrap">{item.title}</td>
-                  <td className="px-6 py-4 text-muted-foreground max-w-xs truncate">{item.summary}</td>
-                  <td className="px-6 py-4 text-foreground">{item.author}</td>
-                  <td className="px-6 py-4 text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> {item.contact}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 tabular-nums text-muted-foreground">{item.createdAt}</td>
+      {loading ? (
+        <div className="py-16 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="hanji-card shadow-card overflow-hidden">
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/50 border-b border-border">
+                  {["제목", "내용", "작성자", "연락처", "작성일"].map((h) => (
+                    <th key={h} className="px-6 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="text-sm">
+                {inquiries.map((item) => (
+                  <tr key={item.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                    <td className="px-6 py-4 font-medium text-foreground whitespace-nowrap">{item.title}</td>
+                    <td className="px-6 py-4 text-muted-foreground max-w-xs truncate">{item.content}</td>
+                    <td className="px-6 py-4 text-foreground">{item.author}</td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> 비공개
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 tabular-nums text-muted-foreground">{item.created_at?.slice(0, 10)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-border">
-          {mockInquiries.map((item) => (
-            <div key={item.id} className="p-4 space-y-2">
-              <h3 className="font-medium text-foreground text-sm">{item.title}</h3>
-              <p className="text-xs text-muted-foreground line-clamp-2">{item.summary}</p>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{item.author}</span>
-                <span className="tabular-nums">{item.createdAt}</span>
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-border">
+            {inquiries.map((item) => (
+              <div key={item.id} className="p-4 space-y-2">
+                <h3 className="font-medium text-foreground text-sm">{item.title}</h3>
+                <p className="text-xs text-muted-foreground line-clamp-2">{item.content}</p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{item.author}</span>
+                  <span className="tabular-nums">{item.created_at?.slice(0, 10)}</span>
+                </div>
               </div>
+            ))}
+          </div>
+
+          {inquiries.length === 0 && (
+            <div className="py-16 text-center text-muted-foreground">
+              등록된 문의사항이 없습니다.
             </div>
-          ))}
+          )}
         </div>
-      </div>
+      )}
 
       {/* Inquiry Modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="문의 등록">
