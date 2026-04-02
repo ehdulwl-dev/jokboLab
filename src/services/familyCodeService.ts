@@ -5,16 +5,13 @@ export interface FamilyCode {
   clan_name: string;
 }
 
-/**
- * family_code로 성씨 정보 조회 (인증)
- */
+const from = (table: string) => (supabase as any).from(table);
+
 export async function verifyFamilyCode(code: string): Promise<FamilyCode | null> {
-  const { data, error } = await supabase
-    .from("family_codes")
+  const { data, error } = await from("family_codes")
     .select("code, clan_name")
     .eq("code", code.toUpperCase())
     .maybeSingle();
-
   if (error) throw error;
   return data;
 }

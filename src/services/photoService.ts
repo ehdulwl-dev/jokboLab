@@ -11,15 +11,13 @@ export interface Photo {
   created_at: string;
 }
 
-/**
- * 사진 목록 조회 (family_code 기반 필터)
- */
+const from = (table: string) => (supabase as any).from(table);
+
 export async function fetchPhotos(
   familyCode: string,
   category?: PhotoCategory
 ): Promise<Photo[]> {
-  let request = supabase
-    .from("photos")
+  let request = from("photos")
     .select("*")
     .eq("family_code", familyCode)
     .order("created_at", { ascending: false });
@@ -33,29 +31,21 @@ export async function fetchPhotos(
   return data ?? [];
 }
 
-/**
- * 사진 등록
- */
 export async function createPhoto(payload: {
   title: string;
   file_path: string;
   category: PhotoCategory;
   family_code: string;
 }): Promise<Photo> {
-  const { data, error } = await supabase
-    .from("photos")
+  const { data, error } = await from("photos")
     .insert(payload)
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
 
-/**
- * 사진 삭제
- */
 export async function deletePhoto(id: string): Promise<void> {
-  const { error } = await supabase.from("photos").delete().eq("id", id);
+  const { error } = await from("photos").delete().eq("id", id);
   if (error) throw error;
 }

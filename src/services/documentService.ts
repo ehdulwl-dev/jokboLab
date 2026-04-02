@@ -9,12 +9,12 @@ export interface Document {
   family_code: string | null;
 }
 
-/**
- * 자료 목록 조회 (검색어 필터 포함, 인증 없이 가능)
- */
+// 테이블이 아직 Supabase에 생성되지 않았으므로 any 캐스팅 사용
+// 테이블 생성 후 generated types가 업데이트되면 제거 가능
+const from = (table: string) => (supabase as any).from(table);
+
 export async function fetchDocuments(query?: string): Promise<Document[]> {
-  let request = supabase
-    .from("documents")
+  let request = from("documents")
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -27,46 +27,33 @@ export async function fetchDocuments(query?: string): Promise<Document[]> {
   return data ?? [];
 }
 
-/**
- * 자료 등록
- */
 export async function createDocument(payload: {
   filename: string;
   file_path?: string;
   family_code?: string;
 }): Promise<Document> {
-  const { data, error } = await supabase
-    .from("documents")
+  const { data, error } = await from("documents")
     .insert(payload)
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
 
-/**
- * 자료 수정
- */
 export async function updateDocument(
   id: string,
   payload: { filename?: string; file_path?: string }
 ): Promise<Document> {
-  const { data, error } = await supabase
-    .from("documents")
+  const { data, error } = await from("documents")
     .update({ ...payload, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
 
-/**
- * 자료 삭제
- */
 export async function deleteDocument(id: string): Promise<void> {
-  const { error } = await supabase.from("documents").delete().eq("id", id);
+  const { error } = await from("documents").delete().eq("id", id);
   if (error) throw error;
 }
