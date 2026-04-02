@@ -1,28 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Download, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Download, Plus, Pencil, Trash2, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import SearchBar from "@/components/SearchBar";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Document {
-  id: number;
-  filename: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const mockData: Document[] = [
-  { id: 1, filename: "김해김씨_족보_2024.pdf", createdAt: "2024-01-15", updatedAt: "2024-03-20" },
-  { id: 2, filename: "전주이씨_족보_2023.pdf", createdAt: "2023-06-10", updatedAt: "2024-01-05" },
-  { id: 3, filename: "밀양박씨_족보_2024.pdf", createdAt: "2024-02-28", updatedAt: "2024-04-12" },
-  { id: 4, filename: "경주최씨_족보_2023.pdf", createdAt: "2023-09-01", updatedAt: "2023-12-15" },
-  { id: 5, filename: "안동권씨_족보_2024.pdf", createdAt: "2024-03-05", updatedAt: "2024-05-18" },
-  { id: 6, filename: "파평윤씨_족보_2023.pdf", createdAt: "2023-07-22", updatedAt: "2024-02-10" },
-  { id: 7, filename: "해주오씨_족보_2024.pdf", createdAt: "2024-04-01", updatedAt: "2024-06-03" },
-  { id: 8, filename: "청주한씨_족보_2023.pdf", createdAt: "2023-11-14", updatedAt: "2024-01-28" },
-];
+import { getStorageUrl } from "@/lib/supabaseStorage";
+import {
+  fetchDocuments,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+  type Document,
+} from "@/services/documentService";
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
@@ -33,12 +23,33 @@ export default function SearchPage() {
   const [editItem, setEditItem] = useState<Document | null>(null);
   const [formName, setFormName] = useState("");
 
-  const filtered = query
-    ? mockData.filter((d) => d.filename.includes(query))
-    : mockData;
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleDownload = (filename: string) => {
-    toast.success(`${filename} 다운로드를 시작합니다.`);
+  const loadDocuments = async (q?: string) => {
+    try {
+      setLoading(true);
+      const data = await fetchDocuments(q);
+      setDocuments(data);
+    } catch (err) {
+      console.error("문서 로드 실패:", err);
+      toast.error("자료를 불러오는데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDocuments(query || undefined);
+  }, [query]);
+
+  const handleDownload = (doc: Document) => {
+    if (doc.file_path) {
+      const url = getStorageUrl("documents", doc.file_path);
+      window.open(url, "_blank");
+    } else {
+      toast.success(`${doc.filename} 다운로드를 시작합니다.`);
+    }
   };
 
   const openCreate = () => {
@@ -53,14 +64,31 @@ export default function SearchPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = (item: Document) => {
-    toast.success(`${item.filename}이(가) 삭제되었습니다.`);
+  const handleDelete = async (item: Document) => {
+    try {
+      await deleteDocument(item.id);
+      toast.success(`${item.filename}이(가) 삭제되었습니다.`);
+      loadDocuments(query || undefined);
+    } catch {
+      toast.error("삭제에 실패했습니다.");
+    }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim()) return;
-    toast.success(editItem ? "수정되었습니다." : "등록되었습니다.");
-    setModalOpen(false);
+    try {
+      if (editItem) {
+        await updateDocument(editItem.id, { filename: formName });
+        toast.success("수정되었습니다.");
+      } else {
+        await createDocument({ filename: formName });
+        toast.success("등록되었습니다.");
+      }
+      setModalOpen(false);
+      loadDocuments(query || undefined);
+    } catch {
+      toast.error("저장에 실패했습니다.");
+    }
   };
 
   return (
@@ -75,7 +103,7 @@ export default function SearchPage() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">자료 검색 결과</h2>
           <p className="text-muted-foreground text-sm mt-1">
-            총 {filtered.length}개의 자료가 검색되었습니다. 다운로드는 인증 없이 가능합니다.
+            총 {documents.length}개의 자료가 검색되었습니다. 다운로드는 인증 없이 가능합니다.
           </p>
         </div>
         {isAdmin && (
@@ -88,107 +116,103 @@ export default function SearchPage() {
         )}
       </div>
 
-      {/* Table */}
-      <div className="hanji-card shadow-card overflow-hidden">
-        {/* Desktop table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                {["번호", "파일명", "생성일자", "수정일자", "작업"].map((h) => (
-                  <th key={h} className="px-6 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="text-sm">
-              {filtered.map((item) => (
-                <tr key={item.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                  <td className="px-6 py-4 tabular-nums text-muted-foreground">{item.id}</td>
-                  <td className="px-6 py-4 font-medium text-foreground">{item.filename}</td>
-                  <td className="px-6 py-4 tabular-nums text-muted-foreground">{item.createdAt}</td>
-                  <td className="px-6 py-4 tabular-nums text-muted-foreground">{item.updatedAt}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDownload(item.filename)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg text-xs font-medium hover:bg-secondary/80 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" /> 다운로드
-                      </button>
-                      {isAdmin && (
-                        <>
-                          <button
-                            onClick={() => openEdit(item)}
-                            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item)}
-                            className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
+      {/* Loading */}
+      {loading ? (
+        <div className="py-16 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="hanji-card shadow-card overflow-hidden">
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/50 border-b border-border">
+                  {["번호", "파일명", "생성일자", "수정일자", "작업"].map((h) => (
+                    <th key={h} className="px-6 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-border">
-          {filtered.map((item) => (
-            <div key={item.id} className="p-4 space-y-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium text-foreground text-sm">{item.filename}</p>
-                  <p className="text-xs text-muted-foreground mt-1 tabular-nums">
-                    생성: {item.createdAt} · 수정: {item.updatedAt}
-                  </p>
-                </div>
-                <span className="text-xs text-muted-foreground tabular-nums">#{item.id}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDownload(item.filename)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg text-xs font-medium"
-                >
-                  <Download className="w-3.5 h-3.5" /> 다운로드
-                </button>
-                {isAdmin && (
-                  <>
-                    <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg hover:bg-muted">
-                      <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                    <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-destructive/10">
-                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="py-16 text-center text-muted-foreground">
-            검색 결과가 없습니다.
+              </thead>
+              <tbody className="text-sm">
+                {documents.map((item, idx) => (
+                  <tr key={item.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                    <td className="px-6 py-4 tabular-nums text-muted-foreground">{idx + 1}</td>
+                    <td className="px-6 py-4 font-medium text-foreground">{item.filename}</td>
+                    <td className="px-6 py-4 tabular-nums text-muted-foreground">{item.created_at?.slice(0, 10)}</td>
+                    <td className="px-6 py-4 tabular-nums text-muted-foreground">{item.updated_at?.slice(0, 10)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDownload(item)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg text-xs font-medium hover:bg-secondary/80 transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5" /> 다운로드
+                        </button>
+                        {isAdmin && (
+                          <>
+                            <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                              <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
+                            <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-border">
+            {documents.map((item, idx) => (
+              <div key={item.id} className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{item.filename}</p>
+                    <p className="text-xs text-muted-foreground mt-1 tabular-nums">
+                      생성: {item.created_at?.slice(0, 10)} · 수정: {item.updated_at?.slice(0, 10)}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground tabular-nums">#{idx + 1}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload(item)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg text-xs font-medium"
+                  >
+                    <Download className="w-3.5 h-3.5" /> 다운로드
+                  </button>
+                  {isAdmin && (
+                    <>
+                      <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg hover:bg-muted">
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                      <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-destructive/10">
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {documents.length === 0 && (
+            <div className="py-16 text-center text-muted-foreground">
+              검색 결과가 없습니다.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editItem ? "자료 수정" : "자료 등록"}
-      >
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? "자료 수정" : "자료 등록"}>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">파일명</label>

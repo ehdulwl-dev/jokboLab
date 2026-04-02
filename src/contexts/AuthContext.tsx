@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { verifyFamilyCode } from "@/services/familyCodeService";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -7,19 +8,11 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  verify: (code: string) => boolean;
+  verify: (code: string) => Promise<boolean>;
   logout: () => void;
   isAdmin: boolean;
   setIsAdmin: (v: boolean) => void;
 }
-
-const clanCodeMap: Record<string, string> = {
-  HEO123: "허씨",
-  KIM999: "김씨",
-  LEE456: "이씨",
-  PARK78: "박씨",
-  CHOI55: "최씨",
-};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -27,11 +20,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthState>({ isAuthenticated: false, clanName: null, code: null });
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const verify = useCallback((code: string) => {
-    const clan = clanCodeMap[code.toUpperCase()];
-    if (clan) {
-      setAuth({ isAuthenticated: true, clanName: clan, code: code.toUpperCase() });
-      return true;
+  const verify = useCallback(async (code: string): Promise<boolean> => {
+    try {
+      const result = await verifyFamilyCode(code);
+      if (result) {
+        setAuth({ isAuthenticated: true, clanName: result.clan_name, code: result.code });
+        return true;
+      }
+    } catch (err) {
+      console.error("인증 실패:", err);
     }
     return false;
   }, []);

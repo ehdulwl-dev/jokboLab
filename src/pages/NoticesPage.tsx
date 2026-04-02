@@ -1,30 +1,45 @@
-import { useState } from "react";
-import { Plus, Pencil, Trash2, ChevronLeft, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Pencil, Trash2, ChevronLeft, Bell, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import Modal from "@/components/Modal";
-
-interface Notice {
-  id: number;
-  title: string;
-  content: string;
-  createdAt: string;
-  clan: string;
-}
-
-const mockNotices: Notice[] = [
-  { id: 1, title: "벌초 일정 안내", content: "올해 벌초 일정은 9월 15일(토)로 예정되어 있습니다. 참석 가능하신 분은 사전에 연락 부탁드립니다. 장소는 경남 하동군 소재 선산이며, 오전 9시까지 집합하시기 바랍니다.", createdAt: "2024-06-01", clan: "허씨" },
-  { id: 2, title: "제사 일정 공지", content: "2024년 추석 제사 일정을 안내드립니다. 음력 8월 15일에 종가에서 진행하며, 참석 여부를 미리 알려주시면 감사하겠습니다.", createdAt: "2024-05-20", clan: "허씨" },
-  { id: 3, title: "족보 업데이트 안내", content: "김해김씨 족보 32세 이후 자료가 업데이트되었습니다. 자료검색 페이지에서 확인하실 수 있습니다.", createdAt: "2024-05-15", clan: "김씨" },
-  { id: 4, title: "종중 정기총회 안내", content: "2024년 종중 정기총회가 11월 첫째 주 토요일에 개최됩니다. 많은 참석 부탁드립니다.", createdAt: "2024-05-10", clan: "허씨" },
-];
+import {
+  fetchNotices,
+  createNotice,
+  updateNotice,
+  deleteNotice,
+  type Notice,
+} from "@/services/noticeService";
 
 export default function NoticesPage() {
-  const { isAuthenticated, clanName, isAdmin } = useAuth();
+  const { isAuthenticated, clanName, code, isAdmin } = useAuth();
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Notice | null>(null);
   const [form, setForm] = useState({ title: "", content: "" });
+
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadNotices = async () => {
+    if (!code) return;
+    try {
+      setLoading(true);
+      const data = await fetchNotices(code);
+      setNotices(data);
+    } catch (err) {
+      console.error("공지 로드 실패:", err);
+      toast.error("공지사항을 불러오는데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && code) {
+      loadNotices();
+    }
+  }, [isAuthenticated, code]);
 
   if (!isAuthenticated) {
     return (
@@ -41,8 +56,6 @@ export default function NoticesPage() {
     );
   }
 
-  const filtered = mockNotices.filter((n) => n.clan === clanName);
-
   const openCreate = () => {
     setEditItem(null);
     setForm({ title: "", content: "" });
@@ -55,17 +68,34 @@ export default function NoticesPage() {
     setModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim() || !form.content.trim()) {
       toast.error("제목과 내용을 입력해주세요.");
       return;
     }
-    toast.success(editItem ? "수정되었습니다." : "등록되었습니다.");
-    setModalOpen(false);
+    try {
+      if (editItem) {
+        await updateNotice(editItem.id, { title: form.title, content: form.content });
+        toast.success("수정되었습니다.");
+      } else {
+        await createNotice({ title: form.title, content: form.content, family_code: code! });
+        toast.success("등록되었습니다.");
+      }
+      setModalOpen(false);
+      loadNotices();
+    } catch {
+      toast.error("저장에 실패했습니다.");
+    }
   };
 
-  const handleDelete = (notice: Notice) => {
-    toast.success(`"${notice.title}" 삭제되었습니다.`);
+  const handleDelete = async (notice: Notice) => {
+    try {
+      await deleteNotice(notice.id);
+      toast.success(`"${notice.title}" 삭제되었습니다.`);
+      loadNotices();
+    } catch {
+      toast.error("삭제에 실패했습니다.");
+    }
   };
 
   // Detail view
@@ -80,7 +110,7 @@ export default function NoticesPage() {
         </button>
         <article className="hanji-card shadow-card p-8">
           <h2 className="text-xl font-bold text-foreground mb-2">{selectedNotice.title}</h2>
-          <p className="text-sm text-muted-foreground mb-6 tabular-nums">{selectedNotice.createdAt}</p>
+          <p className="text-sm text-muted-foreground mb-6 tabular-nums">{selectedNotice.created_at?.slice(0, 10)}</p>
           <div className="text-foreground leading-relaxed whitespace-pre-line">
             {selectedNotice.content}
           </div>
@@ -108,11 +138,15 @@ export default function NoticesPage() {
         )}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="py-16 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : notices.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground">공지사항이 없습니다.</div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((notice) => (
+          {notices.map((notice) => (
             <div
               key={notice.id}
               onClick={() => setSelectedNotice(notice)}
@@ -122,7 +156,7 @@ export default function NoticesPage() {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{notice.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{notice.content}</p>
-                  <p className="text-xs text-muted-foreground mt-2 tabular-nums">{notice.createdAt}</p>
+                  <p className="text-xs text-muted-foreground mt-2 tabular-nums">{notice.created_at?.slice(0, 10)}</p>
                 </div>
                 {isAdmin && (
                   <div className="flex items-center gap-1 ml-4 shrink-0">

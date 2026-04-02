@@ -1,41 +1,49 @@
-import { useState } from "react";
-import { Plus, Trash2, X, Upload, Camera } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Trash2, X, Upload, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import Modal from "@/components/Modal";
+import { getStorageUrl } from "@/lib/supabaseStorage";
+import {
+  fetchPhotos,
+  createPhoto,
+  deletePhoto,
+  type Photo,
+  type PhotoCategory,
+} from "@/services/photoService";
 
-import carousel1 from "@/assets/carousel-1.jpg";
-import carousel2 from "@/assets/carousel-2.jpg";
-import carousel3 from "@/assets/carousel-3.jpg";
-import carousel4 from "@/assets/carousel-4.jpg";
-
-type Category = "산소" | "벌초" | "기타";
-
-interface Photo {
-  id: number;
-  src: string;
-  title: string;
-  category: Category;
-  clan: string;
-}
-
-const mockPhotos: Photo[] = [
-  { id: 1, src: carousel1, title: "허씨 선산 전경", category: "산소", clan: "허씨" },
-  { id: 2, src: carousel2, title: "벌초 작업 모습", category: "벌초", clan: "허씨" },
-  { id: 3, src: carousel3, title: "제사 준비", category: "기타", clan: "허씨" },
-  { id: 4, src: carousel4, title: "김씨 선산", category: "산소", clan: "김씨" },
-  { id: 5, src: carousel1, title: "김씨 벌초 현장", category: "벌초", clan: "김씨" },
-  { id: 6, src: carousel2, title: "이씨 산소 관리", category: "산소", clan: "이씨" },
-];
-
-const categories: (Category | "전체")[] = ["전체", "산소", "벌초", "기타"];
+const categories: (PhotoCategory | "전체")[] = ["전체", "산소", "벌초", "기타"];
 
 export default function PhotosPage() {
-  const { isAuthenticated, clanName, isAdmin } = useAuth();
-  const [selectedCat, setSelectedCat] = useState<Category | "전체">("전체");
+  const { isAuthenticated, clanName, code, isAdmin } = useAuth();
+  const [selectedCat, setSelectedCat] = useState<PhotoCategory | "전체">("전체");
   const [viewPhoto, setViewPhoto] = useState<Photo | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadCat, setUploadCat] = useState<Category>("산소");
+  const [uploadCat, setUploadCat] = useState<PhotoCategory>("산소");
+
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadPhotos = async () => {
+    if (!code) return;
+    try {
+      setLoading(true);
+      const cat = selectedCat === "전체" ? undefined : selectedCat;
+      const data = await fetchPhotos(code, cat);
+      setPhotos(data);
+    } catch (err) {
+      console.error("사진 로드 실패:", err);
+      toast.error("사진을 불러오는데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && code) {
+      loadPhotos();
+    }
+  }, [isAuthenticated, code, selectedCat]);
 
   if (!isAuthenticated) {
     return (
@@ -52,17 +60,25 @@ export default function PhotosPage() {
     );
   }
 
-  const filtered = mockPhotos
-    .filter((p) => p.clan === clanName)
-    .filter((p) => selectedCat === "전체" || p.category === selectedCat);
-
-  const handleDelete = (photo: Photo) => {
-    toast.success(`"${photo.title}" 삭제되었습니다.`);
+  const getPhotoUrl = (photo: Photo) => {
+    return photo.file_path ? getStorageUrl("photos", photo.file_path) : "";
   };
 
-  const handleUpload = () => {
+  const handleDelete = async (photo: Photo) => {
+    try {
+      await deletePhoto(photo.id);
+      toast.success(`"${photo.title}" 삭제되었습니다.`);
+      loadPhotos();
+    } catch {
+      toast.error("삭제에 실패했습니다.");
+    }
+  };
+
+  const handleUpload = async () => {
+    // TODO: 실제 파일 업로드 로직 연결
     toast.success("사진이 업로드되었습니다.");
     setUploadOpen(false);
+    loadPhotos();
   };
 
   return (
@@ -101,14 +117,18 @@ export default function PhotosPage() {
         ))}
       </div>
 
-      {/* Photo grid */}
-      {filtered.length === 0 ? (
+      {/* Loading */}
+      {loading ? (
+        <div className="py-16 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : photos.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground">
           해당 카테고리에 사진이 없습니다.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((photo) => (
+          {photos.map((photo) => (
             <div
               key={photo.id}
               className="hanji-card shadow-card overflow-hidden group cursor-pointer relative"
@@ -116,7 +136,7 @@ export default function PhotosPage() {
             >
               <div className="aspect-[4/3] overflow-hidden">
                 <img
-                  src={photo.src}
+                  src={getPhotoUrl(photo)}
                   alt={photo.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
@@ -153,7 +173,7 @@ export default function PhotosPage() {
             >
               <X className="w-5 h-5 text-primary-foreground" />
             </button>
-            <img src={viewPhoto.src} alt={viewPhoto.title} className="w-full rounded-2xl shadow-elevated" />
+            <img src={getPhotoUrl(viewPhoto)} alt={viewPhoto.title} className="w-full rounded-2xl shadow-elevated" />
             <p className="text-center mt-3 text-primary-foreground text-sm font-medium">{viewPhoto.title}</p>
           </div>
         </div>
@@ -166,7 +186,7 @@ export default function PhotosPage() {
             <label className="block text-sm font-medium text-foreground mb-1.5">카테고리</label>
             <select
               value={uploadCat}
-              onChange={(e) => setUploadCat(e.target.value as Category)}
+              onChange={(e) => setUploadCat(e.target.value as PhotoCategory)}
               className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent/20"
             >
               <option value="산소">산소</option>
