@@ -6,7 +6,7 @@ import {
   fetchInquiries,
   createInquiry,
   type Inquiry,
-} from "@/services/inquiryService";
+} from "@/features/inquiries/api/inquiryApi";
 
 export default function InquiryPage() {
   const [modalOpen, setModalOpen] = useState(false);

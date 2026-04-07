@@ -12,7 +12,7 @@ import {
   updateDocument,
   deleteDocument,
   type Document,
-} from "@/services/documentService";
+} from "@/features/documents/api/documentApi";
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();

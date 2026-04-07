@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import { verifyFamilyCode } from "@/services/familyCodeService";
+import { verifyFamilyCode } from "@/features/familycode/api/familyCodeApi";
 
 interface AuthState {
   isAuthenticated: boolean;

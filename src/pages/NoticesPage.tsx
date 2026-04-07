@@ -9,7 +9,7 @@ import {
   updateNotice,
   deleteNotice,
   type Notice,
-} from "@/services/noticeService";
+} from "@/features/notices/api/noticeApi";
 
 export default function NoticesPage() {
   const { isAuthenticated, clanName, code, isAdmin } = useAuth();

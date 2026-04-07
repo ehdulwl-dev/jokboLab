@@ -10,7 +10,7 @@ import {
   deletePhoto,
   type Photo,
   type PhotoCategory,
-} from "@/services/photoService";
+} from "@/features/photos/api/photoApi";
 
 const categories: (PhotoCategory | "전체")[] = ["전체", "산소", "벌초", "기타"];
 
