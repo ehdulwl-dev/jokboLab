@@ -1,10 +1,8 @@
-import { supabase } from "@/integrations/supabase/client";
+import type { ApiFailure, ApiResponse } from "@/shared/types/api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/api/client";
 
-/** Supabase table: `genealogy_document` */
+/** Supabase table: `genealogy_document` (accessed via jokboLab-backend) */
 export const GENEALOGY_DOCUMENT_TABLE = "genealogy_document" as const;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const from = (table: string) => (supabase as any).from(table);
 
 export interface Document {
   id: string;
@@ -15,18 +13,19 @@ export interface Document {
   family_code: string | null;
 }
 
-export async function fetchDocuments(query?: string): Promise<Document[]> {
-  let request = from(GENEALOGY_DOCUMENT_TABLE)
-    .select("*")
-    .order("createddate", { ascending: false });
-
-  if (query) {
-    request = request.ilike("filename", `%${query}%`);
+const unwrap = <T>(res: ApiResponse<T>): T => {
+  if (res.ok) {
+    return res.data;
   }
+  throw new Error((res as ApiFailure).error.message);
+};
 
-  const { data, error } = await request;
-  if (error) throw error;
-  return data ?? [];
+export async function fetchDocuments(query?: string): Promise<Document[]> {
+  const path = query
+    ? `/api/documents?${new URLSearchParams({ q: query }).toString()}`
+    : "/api/documents";
+  const res = await apiGet<Document[]>(path);
+  return unwrap(res);
 }
 
 export async function createDocument(payload: {
@@ -34,28 +33,19 @@ export async function createDocument(payload: {
   file_path?: string;
   family_code?: string;
 }): Promise<Document> {
-  const { data, error } = await from(GENEALOGY_DOCUMENT_TABLE)
-    .insert(payload)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const res = await apiPost<Document, typeof payload>("/api/documents", payload);
+  return unwrap(res);
 }
 
 export async function updateDocument(
   id: string,
   payload: { filename?: string; file_path?: string }
 ): Promise<Document> {
-  const { data, error } = await from(GENEALOGY_DOCUMENT_TABLE)
-    .update({ ...payload, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const res = await apiPatch<Document, typeof payload>(`/api/documents/${id}`, payload);
+  return unwrap(res);
 }
 
 export async function deleteDocument(id: string): Promise<void> {
-  const { error } = await from(GENEALOGY_DOCUMENT_TABLE).delete().eq("id", id);
-  if (error) throw error;
+  const res = await apiDelete<null>(`/api/documents/${id}`);
+  unwrap(res);
 }

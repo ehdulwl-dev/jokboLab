@@ -55,3 +55,37 @@ export const apiPost = async <T, B = unknown>(
     return toApiFailure(error);
   }
 };
+
+export const apiPatch = async <T, B = unknown>(
+  path: string,
+  body: B,
+  headers?: HeadersInit
+): Promise<ApiResponse<T>> => {
+  try {
+    const response = await fetch(`${ENV.API_BASE_URL}${path}`, {
+      method: "PATCH",
+      headers: { ...defaultHeaders, ...headers },
+      body: JSON.stringify(body),
+    });
+
+    return (await response.json()) as ApiResponse<T>;
+  } catch (error) {
+    return toApiFailure(error);
+  }
+};
+
+export const apiDelete = async <T>(
+  path: string,
+  headers?: HeadersInit
+): Promise<ApiResponse<T>> => {
+  try {
+    const response = await fetch(`${ENV.API_BASE_URL}${path}`, {
+      method: "DELETE",
+      headers: { ...defaultHeaders, ...headers },
+    });
+
+    return (await response.json()) as ApiResponse<T>;
+  } catch (error) {
+    return toApiFailure(error);
+  }
+};
