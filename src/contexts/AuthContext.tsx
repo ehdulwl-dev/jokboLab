@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await verifyFamilyCode(code);
       if (result) {
-        setAuth({ isAuthenticated: true, clanName: result.clan_name, code: result.code });
+        setAuth({ isAuthenticated: true, clanName: result.family_name, code: result.family_code });
         return true;
       }
     } catch (err) {

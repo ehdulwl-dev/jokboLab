@@ -1,29 +1,31 @@
-import { supabase } from "@/integrations/supabase/client";
+import type { ApiFailure, ApiResponse } from "@/shared/types/api";
+import { apiPost } from "@/shared/api/client";
 
-/** Maps to Supabase table `family_management`. */
+/** Maps to Supabase table `family_management` (accessed via backend). */
 export const FAMILY_MANAGEMENT_TABLE = "family_management" as const;
 
 export interface FamilyCode {
-  code: string;
-  clan_name: string;
+  family_code: string;
+  family_name: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const from = (table: string) => (supabase as any).from(table);
+const unwrap = <T>(res: ApiResponse<T>): T => {
+  if (res.ok) {
+    return res.data;
+  }
+  throw new Error((res as ApiFailure).error.message);
+};
 
 /**
- * Verifies a family code against `family_management`.
- * Expects columns `family_code` and `clan_name`; adjust if your schema differs.
+ * Verifies a family code against the backend API.
+ * Returns family_code and family_name if valid.
+ * Throws error with message "유효하지 않은 인증코드입니다." if not found.
  */
-export async function verifyFamilyCode(code: string): Promise<FamilyCode | null> {
-  const { data, error } = await from(FAMILY_MANAGEMENT_TABLE)
-    .select("family_code, clan_name")
-    .eq("family_code", code.toUpperCase())
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  return {
-    code: data.family_code as string,
-    clan_name: data.clan_name as string,
-  };
+export async function verifyFamilyCode(code: string): Promise<FamilyCode> {
+  const res = await apiPost<FamilyCode, { family_code: string }>(
+    "/verify-family-code",
+    { family_code: code }
+  );
+  return unwrap(res);
 }
+
