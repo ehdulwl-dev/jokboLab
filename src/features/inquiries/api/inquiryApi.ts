@@ -9,13 +9,15 @@ export interface Inquiry {
   created_at: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const from = (table: string) => (supabase as any).from(table);
+
 export async function fetchInquiries(): Promise<Inquiry[]> {
-  const { data, error } = await supabase
-    .from("inquiries")
+  const { data, error } = await from("inquiries")
     .select("id, title, content, author, created_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((d) => ({ ...d, contact: null }));
+  return (data ?? []).map((d: any) => ({ ...d, contact: null }));
 }
 
 export async function createInquiry(payload: {
@@ -24,8 +26,7 @@ export async function createInquiry(payload: {
   author: string;
   contact?: string;
 }): Promise<Inquiry> {
-  const { data, error } = await supabase
-    .from("inquiries")
+  const { data, error } = await from("inquiries")
     .insert(payload)
     .select()
     .single();

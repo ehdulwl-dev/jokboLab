@@ -14,8 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["'Pretendard Variable'", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
-        serif: ["'Noto Serif KR'", "serif"],
+        sans: ["'Noto Sans KR'", "'Malgun Gothic'", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,10 +65,6 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-      },
-      boxShadow: {
-        card: "var(--shadow-card)",
-        elevated: "var(--shadow-elevated)",
       },
       keyframes: {
         "accordion-down": {

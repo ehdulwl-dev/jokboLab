@@ -43,13 +43,13 @@ export default function NoticesPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="max-w-6xl mx-auto py-20 px-6 text-center">
-        <Bell className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-foreground mb-2">인증이 필요합니다</h2>
-        <p className="text-muted-foreground">
+      <div className="max-w-6xl mx-auto py-20 px-6">
+        <Bell className="w-12 h-12 text-muted-foreground mb-4" />
+        <h2 className="text-lg font-semibold text-foreground mb-2">인증이 필요합니다</h2>
+        <p className="text-sm text-muted-foreground">
           공지사항을 열람하려면 상단에서 인증코드를 입력해주세요.
         </p>
-        <p className="text-sm text-muted-foreground mt-4">
+        <p className="text-xs text-muted-foreground mt-3">
           인증코드가 없으신 경우 <a href="/inquiry" className="text-primary underline">문의사항</a>을 통해 발급받으실 수 있습니다.
         </p>
       </div>
@@ -101,17 +101,17 @@ export default function NoticesPage() {
   // Detail view
   if (selectedNotice) {
     return (
-      <div className="max-w-3xl mx-auto py-12 px-6">
+      <div className="max-w-3xl mx-auto py-10 px-6">
         <button
           onClick={() => setSelectedNotice(null)}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" /> 목록으로
         </button>
-        <article className="hanji-card shadow-card p-8">
-          <h2 className="text-xl font-bold text-foreground mb-2">{selectedNotice.title}</h2>
-          <p className="text-sm text-muted-foreground mb-6 tabular-nums">{selectedNotice.created_at?.slice(0, 10)}</p>
-          <div className="text-foreground leading-relaxed whitespace-pre-line">
+        <article className="inst-card p-8">
+          <h2 className="text-lg font-semibold text-foreground mb-2">{selectedNotice.title}</h2>
+          <p className="text-xs text-muted-foreground mb-6 tabular-nums">{selectedNotice.created_at?.slice(0, 10)}</p>
+          <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">
             {selectedNotice.content}
           </div>
         </article>
@@ -120,18 +120,18 @@ export default function NoticesPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
+    <div className="max-w-6xl mx-auto py-10 px-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">공지사항</h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            <span className="text-primary font-semibold">{clanName}</span> 관련 공지
+          <h2 className="text-lg font-semibold text-foreground">공지사항</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            <span className="text-primary font-medium">{clanName}</span> 관련 공지
           </p>
         </div>
         {isAdmin && (
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-all active:scale-[0.97]"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" /> 공지 등록
           </button>
@@ -140,35 +140,35 @@ export default function NoticesPage() {
 
       {loading ? (
         <div className="py-16 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </div>
       ) : notices.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground">공지사항이 없습니다.</div>
+        <div className="py-16 text-muted-foreground text-sm">공지사항이 없습니다.</div>
       ) : (
-        <div className="space-y-3">
+        <div className="border border-border divide-y divide-border">
           {notices.map((notice) => (
             <div
               key={notice.id}
               onClick={() => setSelectedNotice(notice)}
-              className="hanji-card shadow-card p-5 cursor-pointer hover:shadow-elevated transition-all group"
+              className="p-5 cursor-pointer hover:bg-secondary transition-colors group"
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{notice.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{notice.content}</p>
+                  <h3 className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">{notice.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notice.content}</p>
                   <p className="text-xs text-muted-foreground mt-2 tabular-nums">{notice.created_at?.slice(0, 10)}</p>
                 </div>
                 {isAdmin && (
                   <div className="flex items-center gap-1 ml-4 shrink-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); openEdit(notice); }}
-                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                      className="p-1 hover:bg-muted transition-colors"
                     >
                       <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(notice); }}
-                      className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
+                      className="p-1 hover:bg-destructive/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     </button>
@@ -189,7 +189,7 @@ export default function NoticesPage() {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="공지 제목"
-              className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all"
+              className="w-full px-3 py-2 bg-background border border-border text-sm outline-none focus:border-primary transition-colors"
             />
           </div>
           <div>
@@ -199,12 +199,12 @@ export default function NoticesPage() {
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               placeholder="공지 내용을 입력하세요"
               rows={6}
-              className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all resize-none"
+              className="w-full px-3 py-2 bg-background border border-border text-sm outline-none focus:border-primary transition-colors resize-none"
             />
           </div>
           <button
             onClick={handleSave}
-            className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-all active:scale-[0.98]"
+            className="w-full py-2.5 bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
           >
             {editItem ? "수정하기" : "등록하기"}
           </button>
