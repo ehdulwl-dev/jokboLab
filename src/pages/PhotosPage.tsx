@@ -47,13 +47,13 @@ export default function PhotosPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="max-w-6xl mx-auto py-20 px-6 text-center">
-        <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-foreground mb-2">인증이 필요합니다</h2>
-        <p className="text-muted-foreground">
+      <div className="max-w-6xl mx-auto py-20 px-6">
+        <Camera className="w-12 h-12 text-muted-foreground mb-4" />
+        <h2 className="text-lg font-semibold text-foreground mb-2">인증이 필요합니다</h2>
+        <p className="text-sm text-muted-foreground">
           족보사진을 열람하려면 상단에서 인증코드를 입력해주세요.
         </p>
-        <p className="text-sm text-muted-foreground mt-4">
+        <p className="text-xs text-muted-foreground mt-3">
           인증코드가 없으신 경우 <a href="/inquiry" className="text-primary underline">문의사항</a>을 통해 발급받으실 수 있습니다.
         </p>
       </div>
@@ -75,25 +75,24 @@ export default function PhotosPage() {
   };
 
   const handleUpload = async () => {
-    // TODO: 실제 파일 업로드 로직 연결
     toast.success("사진이 업로드되었습니다.");
     setUploadOpen(false);
     loadPhotos();
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
+    <div className="max-w-6xl mx-auto py-10 px-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">족보사진</h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            <span className="text-primary font-semibold">{clanName}</span> 관련 사진 자료
+          <h2 className="text-lg font-semibold text-foreground">족보사진</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            <span className="text-primary font-medium">{clanName}</span> 관련 사진 자료
           </p>
         </div>
         {isAdmin && (
           <button
             onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-all active:scale-[0.97]"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" /> 사진 업로드
           </button>
@@ -101,15 +100,15 @@ export default function PhotosPage() {
       </div>
 
       {/* Category filter */}
-      <div className="flex gap-2 mb-8 flex-wrap">
+      <div className="flex gap-0 mb-8 border border-border inline-flex">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCat(cat)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 text-sm font-medium transition-colors border-r border-border last:border-r-0 ${
               selectedCat === cat
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                : "bg-card text-muted-foreground hover:bg-secondary"
             }`}
           >
             {cat}
@@ -120,28 +119,28 @@ export default function PhotosPage() {
       {/* Loading */}
       {loading ? (
         <div className="py-16 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </div>
       ) : photos.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground">
+        <div className="py-16 text-muted-foreground text-sm">
           해당 카테고리에 사진이 없습니다.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border">
           {photos.map((photo) => (
             <div
               key={photo.id}
-              className="hanji-card shadow-card overflow-hidden group cursor-pointer relative"
+              className="bg-card overflow-hidden group cursor-pointer relative"
               onClick={() => setViewPhoto(photo)}
             >
               <div className="aspect-[4/3] overflow-hidden">
                 <img
                   src={getPhotoUrl(photo)}
                   alt={photo.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
-              <div className="p-4">
+              <div className="p-3 border-t border-border">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-medium text-foreground text-sm">{photo.title}</h3>
@@ -150,7 +149,7 @@ export default function PhotosPage() {
                   {isAdmin && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(photo); }}
-                      className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
+                      className="p-1 hover:bg-destructive/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     </button>
@@ -165,16 +164,16 @@ export default function PhotosPage() {
       {/* View modal */}
       {viewPhoto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setViewPhoto(null)}>
-          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-foreground/40" />
           <div className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setViewPhoto(null)}
-              className="absolute -top-10 right-0 p-1.5 rounded-lg hover:bg-card/20 transition-colors"
+              className="absolute -top-10 right-0 p-1"
             >
               <X className="w-5 h-5 text-primary-foreground" />
             </button>
-            <img src={getPhotoUrl(viewPhoto)} alt={viewPhoto.title} className="w-full rounded-2xl shadow-elevated" />
-            <p className="text-center mt-3 text-primary-foreground text-sm font-medium">{viewPhoto.title}</p>
+            <img src={getPhotoUrl(viewPhoto)} alt={viewPhoto.title} className="w-full border border-border" />
+            <p className="mt-2 text-primary-foreground text-sm">{viewPhoto.title}</p>
           </div>
         </div>
       )}
@@ -187,7 +186,7 @@ export default function PhotosPage() {
             <select
               value={uploadCat}
               onChange={(e) => setUploadCat(e.target.value as PhotoCategory)}
-              className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent/20"
+              className="w-full px-3 py-2 bg-background border border-border text-sm outline-none focus:border-primary transition-colors"
             >
               <option value="산소">산소</option>
               <option value="벌초">벌초</option>
@@ -196,15 +195,15 @@ export default function PhotosPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">사진 파일</label>
-            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer">
-              <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <div className="border border-dashed border-border p-8 text-center hover:border-primary transition-colors cursor-pointer">
+              <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">클릭하여 사진을 선택하세요</p>
               <p className="text-xs text-muted-foreground mt-1">JPG, PNG, 최대 10MB</p>
             </div>
           </div>
           <button
             onClick={handleUpload}
-            className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-all active:scale-[0.98]"
+            className="w-full py-2.5 bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
           >
             업로드하기
           </button>
