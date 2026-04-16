@@ -32,22 +32,22 @@ export default function ImageCarousel() {
   const visibleSlides = [0, 1, 2].map((offset) => slides[(startIndex + offset) % slides.length]);
 
   return (
-    <div className="relative w-full max-w-5xl mx-auto">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="relative w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border border border-border">
         {visibleSlides.map((slide, i) => (
           <div
             key={`${startIndex}-${i}`}
-            className="hanji-card shadow-card overflow-hidden group cursor-pointer"
+            className="bg-card overflow-hidden group cursor-pointer"
           >
             <div className="aspect-[4/3] overflow-hidden">
               <img
                 src={slide.src}
                 alt={slide.alt}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             </div>
-            <div className="p-3 text-center">
-              <p className="text-sm text-muted-foreground">{slide.alt}</p>
+            <div className="p-3 border-t border-border">
+              <p className="text-xs text-muted-foreground">{slide.alt}</p>
             </div>
           </div>
         ))}
@@ -56,25 +56,25 @@ export default function ImageCarousel() {
       {/* Controls */}
       <button
         onClick={prev}
-        className="absolute -left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-card flex items-center justify-center hover:bg-card transition-colors border border-border"
+        className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors"
       >
-        <ChevronLeft className="w-5 h-5 text-foreground" />
+        <ChevronLeft className="w-4 h-4 text-foreground" />
       </button>
       <button
         onClick={next}
-        className="absolute -right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-card flex items-center justify-center hover:bg-card transition-colors border border-border"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors"
       >
-        <ChevronRight className="w-5 h-5 text-foreground" />
+        <ChevronRight className="w-4 h-4 text-foreground" />
       </button>
 
       {/* Indicators */}
-      <div className="flex justify-center gap-2 mt-5">
+      <div className="flex justify-center gap-2 mt-4">
         {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => setStartIndex(i)}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === startIndex ? "w-8 bg-primary" : "w-1.5 bg-primary/20"
+            className={`w-2 h-2 transition-colors ${
+              i === startIndex ? "bg-primary" : "bg-border"
             }`}
           />
         ))}
